@@ -1,0 +1,59 @@
+name: 'Sitemap URL Health Check'
+description: 'Check every URL in your sitemap for 404s, 5xx errors, redirects and noindex. Fails the job when broken URLs are found.'
+author: 'lineagersiui-boop'
+branding:
+  icon: 'link'
+  color: 'green'
+
+inputs:
+  apify-token:
+    description: 'Your Apify API token. Store it as a repository secret (for example APIFY_TOKEN) and pass it with secrets.APIFY_TOKEN. Runs are billed to this Apify account.'
+    required: true
+  site-url:
+    description: 'Site address(es) to check, for example example.com. The sitemap is found from robots.txt or /sitemap.xml. Comma- or newline-separated, up to 10. Give this or sitemap-url.'
+    required: false
+    default: ''
+  sitemap-url:
+    description: 'Direct sitemap, sitemap-index, .xml.gz or plain-text list URL(s). Comma- or newline-separated, up to 10. Give this or site-url.'
+    required: false
+    default: ''
+  max-urls:
+    description: 'Maximum URLs to check per run (1 to 5000). This is the hard cap on billed URL checks.'
+    required: false
+    default: '500'
+  fail-on:
+    description: 'Comma-separated flags that fail the job. Empty means never fail. Flags: not_found, client_error, server_error, redirected, redirect_chain, too_many_redirects, https_downgrade, noindex_header, timeout, network_error.'
+    required: false
+    default: 'not_found,server_error,client_error'
+  only-problems:
+    description: 'Return only URLs with problems (true) or every checked URL (false). Healthy URLs are billed either way.'
+    required: false
+    default: 'true'
+
+outputs:
+  problems:
+    description: 'Number of checked URLs with any problem flag (from the Actor run SUMMARY).'
+    value: ${{ steps.check.outputs.problems }}
+  failing:
+    description: 'Number of returned URLs that carry at least one fail-on flag.'
+    value: ${{ steps.check.outputs.failing }}
+  checked:
+    description: 'Number of URLs checked.'
+    value: ${{ steps.check.outputs.checked }}
+  run-id:
+    description: 'Apify run ID, for looking up the full results in Apify Console.'
+    value: ${{ steps.check.outputs.run-id }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: check
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/check.sh"
+      env:
+        INPUT_APIFY_TOKEN: ${{ inputs.apify-token }}
+        INPUT_SITE_URL: ${{ inputs.site-url }}
+        INPUT_SITEMAP_URL: ${{ inputs.sitemap-url }}
+        INPUT_MAX_URLS: ${{ inputs.max-urls }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_ONLY_PROBLEMS: ${{ inputs.only-problems }}
