@@ -1,0 +1,28 @@
+# Example workflow. Copy this file to .github/workflows/sitemap-health.yml in YOUR site's repository.
+# (It lives in examples/ here because a Marketplace action repo should not contain workflow files.)
+name: Sitemap health
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # every Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check sitemap URLs
+        id: sitemap
+        uses: lineagersiui-boop/sitemap-url-health-check@v1
+        with:
+          apify-token: ${{ secrets.APIFY_TOKEN }}
+          site-url: example.com          # your own site
+          max-urls: 500
+          fail-on: not_found,server_error,client_error
+
+      - name: Report
+        if: always()
+        run: echo "Problems found ${{ steps.sitemap.outputs.problems }}, failing ${{ steps.sitemap.outputs.failing }}"
